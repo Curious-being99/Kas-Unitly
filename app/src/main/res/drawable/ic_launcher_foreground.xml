@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="utf-8"?>
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="108dp"
+    android:height="108dp"
+    android:viewportWidth="108"
+    android:viewportHeight="108">
+    
+    <!-- A clean, pure vector 'K' in Kaspa Cyan -->
+    <path
+        android:fillColor="#70C7BA"
+        android:pathData="M 59.61,81.79 L 70.54,83.41 L 74.89,54.01 L 70.54,24.59 L 59.61,26.21 L 62.73,47.36 L 39.85,29.75 L 33.11,38.54 L 53.18,54.01 L 33.11,69.46 L 39.85,78.27 L 62.73,60.64 Z" />
+</vector>
