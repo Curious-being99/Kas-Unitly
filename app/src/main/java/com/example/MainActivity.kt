@@ -148,10 +148,10 @@ fun KaspaMainScreen() {
                     .weight(1f)
                     .padding(horizontal = 16.dp)
                     .padding(vertical = 8.dp),
-                verticalArrangement = Arrangement.SpaceEvenly
+                verticalArrangement = Arrangement.SpaceBetween
             ) {
-                MathDisplay(state = state)
                 ConversionDisplay(state = state, viewModel = viewModel)
+                MathDisplay(state = state)
             }
             
             KeypadSection(viewModel = viewModel)
@@ -166,12 +166,15 @@ fun KaspaMainScreen() {
 @Composable
 fun MathDisplay(state: KaspaState) {
     Column(
-        modifier = Modifier.fillMaxWidth().padding(horizontal = 8.dp),
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(horizontal = 8.dp)
+            .padding(bottom = 16.dp),
         horizontalAlignment = Alignment.End
     ) {
         Text(
             text = state.mathExpression.ifEmpty { " " },
-            style = MaterialTheme.typography.displaySmall,
+            style = MaterialTheme.typography.titleMedium,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
             maxLines = 1
         )
@@ -181,7 +184,7 @@ fun MathDisplay(state: KaspaState) {
         
         Text(
             text = if (showResult) "= ${state.mathResult}" else " ",
-            style = MaterialTheme.typography.displayLarge,
+            style = MaterialTheme.typography.headlineLarge,
             color = MaterialTheme.colorScheme.onBackground,
             fontWeight = FontWeight.Medium,
             maxLines = 1
@@ -261,7 +264,7 @@ fun ConversionDisplay(state: KaspaState, viewModel: KaspaViewModel) {
                     Spacer(modifier = Modifier.height(4.dp))
                     Text(
                         text = state.fiatAmount,
-                        style = MaterialTheme.typography.displayMedium,
+                        style = MaterialTheme.typography.headlineLarge,
                         color = if (isFiatActive) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant,
                         fontWeight = FontWeight.Light,
                         modifier = Modifier.padding(horizontal = 4.dp, vertical = 2.dp)
@@ -294,7 +297,7 @@ fun ConversionDisplay(state: KaspaState, viewModel: KaspaViewModel) {
                     Spacer(modifier = Modifier.height(4.dp))
                     Text(
                         text = state.kaspaAmount,
-                        style = MaterialTheme.typography.displayMedium,
+                        style = MaterialTheme.typography.headlineLarge,
                         color = if (isKasActive) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant,
                         fontWeight = FontWeight.Light,
                         modifier = Modifier.padding(horizontal = 4.dp, vertical = 2.dp)
@@ -353,9 +356,9 @@ fun KeypadSection(viewModel: KaspaViewModel) {
                     Box(
                         modifier = Modifier
                             .weight(1f)
-                            .height(50.dp)
+                            .height(58.dp)
                             .padding(horizontal = 2.dp)
-                            .clip(RoundedCornerShape(25.dp))
+                            .clip(RoundedCornerShape(29.dp))
                             .clickable(enabled = key != " ") { viewModel.onKeypadPress(key) },
                         contentAlignment = Alignment.Center
                     ) {
