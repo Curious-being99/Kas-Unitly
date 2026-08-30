@@ -20,7 +20,16 @@ data class KaspaState(
     val fiatAmount: String = "0",
     val activeInput: InputMode = InputMode.KAS,
     val selectedFiat: String = "usd",
-    val prices: Map<String, Double> = emptyMap(),
+    val prices: Map<String, Double> = mapOf(
+        "usd" to 0.0276,
+        "eur" to 0.0238,
+        "gbp" to 0.0204,
+        "jpy" to 4.41,
+        "cad" to 0.0383,
+        "aud" to 0.0385,
+        "chf" to 0.0223,
+        "cny" to 0.186
+    ),
     val isLoading: Boolean = false,
     val error: String? = null,
     val lastUpdated: Long = 0L,
@@ -76,8 +85,34 @@ class KaspaViewModel(private val historyDao: HistoryDao, private val prefs: andr
         viewModelScope.launch {
             _state.update { it.copy(isLoading = true, error = null) }
             try {
-                val response = api.getKaspaPrice(supportedFiats.joinToString(","))
-                val kaspaPrices = response["kaspa"] ?: emptyMap()
+                // Dual strategy: Try official direct + open fiat exchange rates API first (Highly reliable, no rate limits)
+                val kaspaPrices = try {
+                    val officialPriceResponse = api.getOfficialKaspaPrice()
+                    val fiatRatesResponse = api.getFiatRates()
+                    val priceUsd = officialPriceResponse.price
+                    val rates = fiatRatesResponse.rates
+                    
+                    val map = mutableMapOf<String, Double>()
+                    for (fiat in supportedFiats) {
+                        val rate = rates[fiat.uppercase()] ?: rates[fiat.lowercase()]
+                        if (rate != null) {
+                            map[fiat] = priceUsd * rate
+                        }
+                    }
+                    if (map.isNotEmpty()) {
+                        map
+                    } else {
+                        throw Exception("Empty direct rate map")
+                    }
+                } catch (directEx: Exception) {
+                    // Fallback to CoinGecko (Legacy option)
+                    try {
+                        val response = api.getKaspaPrice(supportedFiats.joinToString(","))
+                        response["kaspa"] ?: emptyMap()
+                    } catch (cgEx: Exception) {
+                        throw Exception("Both direct and fallback price fetches failed: ${cgEx.localizedMessage}")
+                    }
+                }
                 
                 try {
                     val json = org.json.JSONObject()
@@ -263,19 +298,38 @@ class KaspaViewModel(private val historyDao: HistoryDao, private val prefs: andr
         }
     }
 
+    private fun formatConversionValue(value: Double, isFiat: Boolean): String {
+        if (value == 0.0) return "0"
+        if (value.isNaN() || value.isInfinite()) return "0"
+        
+        val absVal = Math.abs(value)
+        val formatted = when {
+            absVal >= 1000.0 -> String.format(java.util.Locale.US, "%.2f", value)
+            absVal >= 1.0 -> String.format(java.util.Locale.US, if (isFiat) "%.4f" else "%.4f", value)
+            absVal >= 0.0001 -> String.format(java.util.Locale.US, "%.4f", value)
+            else -> String.format(java.util.Locale.US, "%.6f", value)
+        }
+        return if (formatted.contains(".")) {
+            val trimmed = formatted.trimEnd('0').trimEnd('.')
+            if (trimmed.isEmpty()) "0" else trimmed
+        } else {
+            formatted
+        }
+    }
+
     private fun recalculate() {
         val st = _state.value
         val price = st.prices[st.selectedFiat] ?: 0.0
-        if (price == 0.0) return
+        if (price <= 0.0) return
 
         if (st.activeInput == InputMode.KAS) {
             val kas = st.kaspaAmount.replace(",", ".").toDoubleOrNull() ?: 0.0
             val fiat = kas * price
-            _state.update { it.copy(fiatAmount = String.format(java.util.Locale.US, "%.2f", fiat)) }
+            _state.update { it.copy(fiatAmount = formatConversionValue(fiat, isFiat = true)) }
         } else {
             val fiat = st.fiatAmount.replace(",", ".").toDoubleOrNull() ?: 0.0
             val kas = fiat / price
-            _state.update { it.copy(kaspaAmount = String.format(java.util.Locale.US, "%.4f", kas)) }
+            _state.update { it.copy(kaspaAmount = formatConversionValue(kas, isFiat = false)) }
         }
     }
 

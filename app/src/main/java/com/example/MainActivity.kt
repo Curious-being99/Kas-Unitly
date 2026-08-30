@@ -27,7 +27,9 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.Lifecycle
@@ -171,26 +173,36 @@ fun MathDisplay(state: KaspaState) {
     Column(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(horizontal = 8.dp)
+            .padding(start = 16.dp, end = 24.dp)
             .padding(bottom = 16.dp),
         horizontalAlignment = Alignment.End
     ) {
-        Text(
-            text = state.mathExpression.ifEmpty { " " },
-            style = MaterialTheme.typography.titleMedium,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
-            maxLines = 1
-        )
-        
         val hasOperator = state.mathExpression.any { it in "+-×÷%π√∆~|:<>^\\()" }
         val showResult = state.mathResult.isNotEmpty() && hasOperator
+
+        Text(
+            text = state.mathExpression.ifEmpty { " " },
+            style = MaterialTheme.typography.titleMedium.copy(
+                fontFamily = FontFamily.SansSerif
+            ),
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            textAlign = TextAlign.End,
+            maxLines = 1,
+            modifier = Modifier.padding(end = 4.dp)
+        )
+        
+        Spacer(modifier = Modifier.height(4.dp))
         
         Text(
             text = if (showResult) "= ${state.mathResult}" else " ",
-            style = MaterialTheme.typography.headlineLarge,
+            style = MaterialTheme.typography.headlineLarge.copy(
+                fontFamily = FontFamily.SansSerif,
+                fontWeight = FontWeight.SemiBold
+            ),
             color = MaterialTheme.colorScheme.onBackground,
-            fontWeight = FontWeight.Medium,
-            maxLines = 1
+            textAlign = TextAlign.End,
+            maxLines = 1,
+            modifier = Modifier.padding(end = 4.dp)
         )
     }
 }
@@ -267,9 +279,11 @@ fun ConversionDisplay(state: KaspaState, viewModel: KaspaViewModel) {
                     Spacer(modifier = Modifier.height(4.dp))
                     Text(
                         text = state.fiatAmount,
-                        style = MaterialTheme.typography.headlineLarge,
+                        style = MaterialTheme.typography.headlineLarge.copy(
+                            fontFamily = FontFamily.SansSerif
+                        ),
                         color = if (isFiatActive) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant,
-                        fontWeight = FontWeight.Light,
+                        fontWeight = FontWeight.Normal,
                         modifier = Modifier.padding(horizontal = 4.dp, vertical = 2.dp)
                     )
                 }
@@ -300,9 +314,11 @@ fun ConversionDisplay(state: KaspaState, viewModel: KaspaViewModel) {
                     Spacer(modifier = Modifier.height(4.dp))
                     Text(
                         text = state.kaspaAmount,
-                        style = MaterialTheme.typography.headlineLarge,
+                        style = MaterialTheme.typography.headlineLarge.copy(
+                            fontFamily = FontFamily.SansSerif
+                        ),
                         color = if (isKasActive) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant,
-                        fontWeight = FontWeight.Light,
+                        fontWeight = FontWeight.Normal,
                         modifier = Modifier.padding(horizontal = 4.dp, vertical = 2.dp)
                     )
                 }
@@ -323,7 +339,7 @@ fun ConversionDisplay(state: KaspaState, viewModel: KaspaViewModel) {
             Spacer(modifier = Modifier.width(8.dp))
             val currentPrice = state.prices[state.selectedFiat] ?: 0.0
             Text(
-                text = "1 KAS = ${currentPrice.format(4)} ${state.selectedFiat.uppercase()}",
+                text = "1 KAS = ${currentPrice.format(4)}",
                 style = MaterialTheme.typography.labelSmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant
             )
