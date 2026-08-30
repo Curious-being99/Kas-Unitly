@@ -48,11 +48,14 @@ object MathEvaluator {
             .replace(">", "")
             .replace(" ", "")
 
-        // 2. Square root: replace √number with sqrt(number) and √ with sqrt
+        // 2. Normalize leading decimal dots (e.g. .5 => 0.5, +.5 => +0.5)
+        expr = expr.replace(Regex("(^|[+\\-*/^%(])\\.([0-9])"), "$10.$2")
+
+        // 3. Square root: replace √number with sqrt(number) and √ with sqrt
         expr = expr.replace(Regex("√([0-9]+(?:\\.[0-9]+)?)"), "sqrt($1)")
         expr = expr.replace("√", "sqrt")
 
-        // 3. Implicit multiplication
+        // 4. Implicit multiplication
         expr = expr.replace(Regex("(\\d+)\\("), "$1*(")
         expr = expr.replace(Regex("\\)(\\d+)"), ")*$1")
         expr = expr.replace(Regex("\\)\\("), ")*(")
@@ -60,8 +63,9 @@ object MathEvaluator {
         expr = expr.replace(Regex("(\\d+)sqrt"), "$1*sqrt")
         expr = expr.replace(Regex("\\)pi"), ")*pi")
         expr = expr.replace(Regex("\\)sqrt"), ")*sqrt")
+        expr = expr.replace(Regex("pi([0-9]+)"), "pi*$1")
 
-        // 4. Percentage calculations when used with + and -:
+        // 5. Percentage calculations when used with + and -:
         // e.g. 100 + 20% => (100 + (100 * (20 / 100)))
         // e.g. 100 - 20% => (100 - (100 * (20 / 100)))
         expr = expr.replace(Regex("([0-9.]+|pi)\\+([0-9.]+)%($|[+\\-*/^)])")) {
@@ -77,18 +81,17 @@ object MathEvaluator {
             "($a-($a*($b/100)))$next"
         }
 
-        // 5. Standalone or postfix percentage: e.g. 50% or 100 * 20% (when % is followed by end of string or an operator)
-        // Note: When % is directly followed by a number/expression without another operator (e.g. 1000%2), it acts as binary modulo
+        // 6. Standalone or postfix percentage: e.g. 50% or 100 * 20%
         expr = expr.replace(Regex("([0-9.]+|pi|sqrt\\([^)]*\\)|\\))%($|[+\\-*/^)])")) {
             val operand = it.groupValues[1]
             val next = it.groupValues[2]
             "($operand/100)$next"
         }
 
-        // 6. Unary minus after operators: e.g. 5 * -3 => 5 * (-3), 10 / -2 => 10 / (-2)
+        // 7. Unary minus after operators: e.g. 5 * -3 => 5 * (-3), 10 / -2 => 10 / (-2)
         expr = expr.replace(Regex("([+\\-*/^])-([0-9.]+|pi|sqrt\\([^)]*\\))"), "$1(-$2)")
 
-        // 7. Clean trailing operators for live typing (e.g. "5+", "10/", "8-", "3*", "1000%")
+        // 8. Clean trailing operators for live typing (e.g. "5+", "10/", "8-", "3*", "1000%")
         while (expr.isNotEmpty() && (expr.endsWith("+") || expr.endsWith("-") || expr.endsWith("*") ||
                     expr.endsWith("/") || expr.endsWith("^") || expr.endsWith("%") || expr.endsWith(".") ||
                     expr.endsWith("(") || expr.endsWith("sqrt"))) {
@@ -101,7 +104,7 @@ object MathEvaluator {
 
         if (expr.isEmpty()) return ""
 
-        // 8. Auto-close open parentheses for live evaluation
+        // 9. Auto-close open parentheses for live evaluation
         val openCount = expr.count { it == '(' }
         val closeCount = expr.count { it == ')' }
         if (openCount > closeCount) {

@@ -81,5 +81,20 @@ class ExampleUnitTest {
     assertEquals(10.0, MathEvaluator.evaluate("10 × ")!!, 0.0001)
     assertEquals(10.0, MathEvaluator.evaluate("10 ÷ ")!!, 0.0001)
     assertEquals(10.0, MathEvaluator.evaluate("10 - ")!!, 0.0001)
+
+    // Leading decimal point normalization
+    assertEquals(0.5, MathEvaluator.evaluate(".5")!!, 0.0001)
+    assertEquals(5.5, MathEvaluator.evaluate("5 + .5")!!, 0.0001)
+    assertEquals(4.75, MathEvaluator.evaluate("5 - .25")!!, 0.0001)
+    assertEquals(2.5, MathEvaluator.evaluate("5 × .5")!!, 0.0001)
+  }
+
+  @Test
+  fun mathEvaluator_edgeCasesAndErrorHandling() {
+    // Division by zero safely returns null without throwing unhandled exceptions
+    assertNull(MathEvaluator.evaluate("10 ÷ 0"))
+    assertNull(MathEvaluator.evaluate("100 % 0"))
+    assertNull(MathEvaluator.evaluate(""))
+    assertNull(MathEvaluator.evaluate("   "))
   }
 }

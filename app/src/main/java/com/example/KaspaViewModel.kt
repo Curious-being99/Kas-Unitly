@@ -33,6 +33,8 @@ data class KaspaState(
     val isLoading: Boolean = false,
     val error: String? = null,
     val lastUpdated: Long = 0L,
+    val activePriceSource: String = "Decentralized Network",
+    val isOffline: Boolean = false,
     val mathExpression: String = "",
     val mathResult: String = "",
     val lastFinalizedExpression: String = "",
@@ -49,8 +51,10 @@ class KaspaViewModel(private val historyDao: HistoryDao, private val prefs: andr
         .stateIn(viewModelScope, SharingStarted.Lazily, emptyList())
 
     init {
-        // Load cached prices
+        // Load cached prices from persistent storage immediately
         val cachedPricesJson = prefs.getString("cached_prices", null)
+        val cachedSource = prefs.getString("cached_price_source", "Decentralized Cache") ?: "Decentralized Cache"
+        val cachedTimestamp = prefs.getLong("cached_price_timestamp", 0L)
         if (cachedPricesJson != null) {
             try {
                 val json = org.json.JSONObject(cachedPricesJson)
@@ -60,8 +64,10 @@ class KaspaViewModel(private val historyDao: HistoryDao, private val prefs: andr
                     val key = keys.next()
                     map[key] = json.getDouble(key)
                 }
-                _state.update { it.copy(prices = map) }
-                recalculate()
+                if (map.isNotEmpty()) {
+                    _state.update { it.copy(prices = map, activePriceSource = cachedSource, lastUpdated = cachedTimestamp) }
+                    recalculate()
+                }
             } catch (e: Exception) {
                 // Ignore parse errors
             }
@@ -86,48 +92,207 @@ class KaspaViewModel(private val historyDao: HistoryDao, private val prefs: andr
     fun fetchPrices() {
         viewModelScope.launch {
             _state.update { it.copy(isLoading = true, error = null) }
+            
+            var fetchedKaspaUsdPrice: Double? = null
+            var sourceLabel = "Kaspa Network"
+
+            // --- STEP 1: Multi-Tier KAS/USD Price Fetching Pipeline ---
+            // Tier 1: Official Kaspa Node / Indexer API
             try {
-                // Dual strategy: Try official direct + open fiat exchange rates API first (Highly reliable, no rate limits)
-                val kaspaPrices = try {
-                    val officialPriceResponse = api.getOfficialKaspaPrice()
-                    val fiatRatesResponse = api.getFiatRates()
-                    val priceUsd = officialPriceResponse.price
-                    val rates = fiatRatesResponse.rates
-                    
-                    val map = mutableMapOf<String, Double>()
-                    for (fiat in supportedFiats) {
-                        val rate = rates[fiat.uppercase()] ?: rates[fiat.lowercase()]
-                        if (rate != null) {
-                            map[fiat] = priceUsd * rate
-                        }
+                val resp = api.getOfficialKaspaPrice()
+                if (resp.price > 0.0) {
+                    fetchedKaspaUsdPrice = resp.price
+                    sourceLabel = "Kaspa Network Node"
+                }
+            } catch (e: Exception) {
+                // Proceed to Tier 2
+            }
+
+            // Tier 2: MEXC Global Spot Market (High-volume KAS hub)
+            if (fetchedKaspaUsdPrice == null) {
+                try {
+                    val mexcResp = api.getMexcKaspaPrice()
+                    val p = mexcResp.price?.toDoubleOrNull()
+                    if (p != null && p > 0.0) {
+                        fetchedKaspaUsdPrice = p
+                        sourceLabel = "MEXC Liquidity Node"
                     }
-                    if (map.isNotEmpty()) {
-                        map
-                    } else {
-                        throw Exception("Empty direct rate map")
+                } catch (e: Exception) {
+                    // Proceed to Tier 3
+                }
+            }
+
+            // Tier 3: Gate.io Global Spot Market
+            if (fetchedKaspaUsdPrice == null) {
+                try {
+                    val gateResp = api.getGateKaspaPrice()
+                    val p = gateResp.firstOrNull()?.last?.toDoubleOrNull()
+                    if (p != null && p > 0.0) {
+                        fetchedKaspaUsdPrice = p
+                        sourceLabel = "Gate.io Market Node"
                     }
-                } catch (directEx: Exception) {
-                    // Fallback to CoinGecko (Legacy option)
+                } catch (e: Exception) {
+                    // Proceed to Tier 4
+                }
+            }
+
+            // Tier 4: CoinPaprika Open Decentralized Crypto Index
+            if (fetchedKaspaUsdPrice == null) {
+                try {
+                    val paprikaResp = api.getCoinPaprikaKaspaPrice()
+                    val p = paprikaResp.quotes?.USD?.price
+                    if (p != null && p > 0.0) {
+                        fetchedKaspaUsdPrice = p
+                        sourceLabel = "CoinPaprika Feed"
+                    }
+                } catch (e: Exception) {
+                    // Proceed to Tier 5
+                }
+            }
+
+            // Tier 5: CryptoCompare Aggregator
+            if (fetchedKaspaUsdPrice == null) {
+                try {
+                    val ccResp = api.getCryptoComparePrice()
+                    val p = ccResp.USD
+                    if (p != null && p > 0.0) {
+                        fetchedKaspaUsdPrice = p
+                        sourceLabel = "CryptoCompare Feed"
+                    }
+                } catch (e: Exception) {
+                    // Proceed to Tier 6
+                }
+            }
+
+            // Tier 6: CoinGecko USD Price
+            if (fetchedKaspaUsdPrice == null) {
+                try {
+                    val cgResp = api.getKaspaPrice("usd")
+                    val p = cgResp["kaspa"]?.get("usd")
+                    if (p != null && p > 0.0) {
+                        fetchedKaspaUsdPrice = p
+                        sourceLabel = "CoinGecko Index"
+                    }
+                } catch (e: Exception) {
+                    // All live KAS/USD nodes failed
+                }
+            }
+
+            // --- STEP 2: Multi-Tier Global Fiat Rates Pipeline ---
+            var fiatRatesMap: Map<String, Double>? = null
+
+            if (fetchedKaspaUsdPrice != null) {
+                // Fiat Tier 1: Open ER-API (open exchange rate feed)
+                try {
+                    val erResp = api.getFiatRatesOpenEr()
+                    if (!erResp.rates.isNullOrEmpty()) {
+                        fiatRatesMap = erResp.rates
+                    }
+                } catch (e: Exception) {
+                    // Proceed to Fiat Tier 2
+                }
+
+                // Fiat Tier 2: ExchangeRate-API v4 mirror
+                if (fiatRatesMap == null) {
                     try {
-                        val response = api.getKaspaPrice(supportedFiats.joinToString(","))
-                        response["kaspa"] ?: emptyMap()
-                    } catch (cgEx: Exception) {
-                        throw Exception("Both direct and fallback price fetches failed: ${cgEx.localizedMessage}")
+                        val exResp = api.getFiatRatesExchangeRateApi()
+                        if (!exResp.rates.isNullOrEmpty()) {
+                            fiatRatesMap = exResp.rates
+                        }
+                    } catch (e: Exception) {
+                        // Proceed to Fiat Tier 3
                     }
                 }
-                
+
+                // Fiat Tier 3: Decentralized jsDelivr Edge CDN Currency API
+                if (fiatRatesMap == null) {
+                    try {
+                        val jsdResp = api.getFiatRatesJsDelivr()
+                        if (!jsdResp.usd.isNullOrEmpty()) {
+                            fiatRatesMap = jsdResp.usd
+                        }
+                    } catch (e: Exception) {
+                        // Proceed to Fiat Tier 4
+                    }
+                }
+
+                // Fiat Tier 4: Cloudflare Pages Edge CDN Currency API
+                if (fiatRatesMap == null) {
+                    try {
+                        val cfResp = api.getFiatRatesCloudflare()
+                        if (!cfResp.usd.isNullOrEmpty()) {
+                            fiatRatesMap = cfResp.usd
+                        }
+                    } catch (e: Exception) {
+                        // All fiat mirrors failed
+                    }
+                }
+            }
+
+            // --- STEP 3: Composite Multi-Rate Assembly & Cache Protection ---
+            val calculatedPrices = mutableMapOf<String, Double>()
+
+            if (fetchedKaspaUsdPrice != null && fiatRatesMap != null) {
+                for (fiat in supportedFiats) {
+                    val rate = fiatRatesMap[fiat.uppercase()]
+                        ?: fiatRatesMap[fiat.lowercase()]
+                        ?: if (fiat.equals("usd", ignoreCase = true)) 1.0 else null
+                    if (rate != null) {
+                        calculatedPrices[fiat] = fetchedKaspaUsdPrice * rate
+                    }
+                }
+            }
+
+            // Direct Multi-Fiat Fallback (CoinGecko all-in-one query if cross-rates unavailable)
+            if (calculatedPrices.isEmpty()) {
+                try {
+                    val multiCgResp = api.getKaspaPrice(supportedFiats.joinToString(","))
+                    val cgMap = multiCgResp["kaspa"]
+                    if (!cgMap.isNullOrEmpty()) {
+                        calculatedPrices.putAll(cgMap)
+                        sourceLabel = "CoinGecko Multi-Feed"
+                    }
+                } catch (e: Exception) {
+                    // Fallback to offline stored state
+                }
+            }
+
+            if (calculatedPrices.isNotEmpty()) {
+                // Success with one of the decentralized/redundant tiers
+                val now = System.currentTimeMillis()
                 try {
                     val json = org.json.JSONObject()
-                    for ((k, v) in kaspaPrices) {
+                    for ((k, v) in calculatedPrices) {
                         json.put(k, v)
                     }
-                    prefs.edit().putString("cached_prices", json.toString()).apply()
+                    prefs.edit()
+                        .putString("cached_prices", json.toString())
+                        .putString("cached_price_source", sourceLabel)
+                        .putLong("cached_price_timestamp", now)
+                        .apply()
                 } catch (e: Exception) {}
 
-                _state.update { it.copy(prices = kaspaPrices, isLoading = false, lastUpdated = System.currentTimeMillis()) }
+                _state.update {
+                    it.copy(
+                        prices = calculatedPrices,
+                        isLoading = false,
+                        error = null,
+                        lastUpdated = now,
+                        activePriceSource = sourceLabel,
+                        isOffline = false
+                    )
+                }
                 recalculate()
-            } catch (e: Exception) {
-                _state.update { it.copy(isLoading = false, error = e.localizedMessage) }
+            } else {
+                // If completely disconnected, retain existing cached prices & indicate offline resilience
+                _state.update {
+                    it.copy(
+                        isLoading = false,
+                        activePriceSource = if (it.lastUpdated > 0L) "Cached Rates (${it.activePriceSource})" else "Baseline Offline Rates",
+                        isOffline = true
+                    )
+                }
+                recalculate()
             }
         }
     }
@@ -214,7 +379,19 @@ class KaspaViewModel(private val historyDao: HistoryDao, private val prefs: andr
                     nextFinalized = false
                     nextLastFinalizedExpr = ""
                 } else {
-                    if (isBinaryOperator && currentExpr.isNotEmpty()) {
+                    if (keyToAppend == ".") {
+                        val lastOpIndex = currentExpr.lastIndexOfAny(charArrayOf('+', '-', '×', '÷', '^', '%', '(', ')'))
+                        val currentNumberSegment = if (lastOpIndex >= 0) currentExpr.substring(lastOpIndex + 1) else currentExpr
+                        if (currentNumberSegment.contains(".")) {
+                            // Already has a dot in this number token, ignore duplicate dot
+                            return
+                        }
+                        if (currentNumberSegment.isEmpty() || currentExpr.isEmpty() || currentExpr.last() in listOf('+', '-', '×', '÷', '^', '%', '(')) {
+                            newExpr = currentExpr + "0."
+                        } else {
+                            newExpr = currentExpr + "."
+                        }
+                    } else if (isBinaryOperator && currentExpr.isNotEmpty()) {
                         val lastChar = currentExpr.last().toString()
                         if (lastChar in listOf("+", "-", "×", "÷", "^")) {
                             // If pressing minus after multiply or divide, allow unary minus (e.g. 5 × -)
@@ -356,6 +533,24 @@ class KaspaViewModel(private val historyDao: HistoryDao, private val prefs: andr
         lastSavedKaspa = ""
         viewModelScope.launch {
             historyDao.clearAll()
+        }
+    }
+
+    fun restoreFromHistory(item: HistoryEntity) {
+        val fiat = item.fiatCurrency.lowercase()
+        if (fiat in supportedFiats) {
+            _state.update {
+                it.copy(
+                    selectedFiat = fiat,
+                    kaspaAmount = item.kaspaAmount,
+                    fiatAmount = item.fiatAmount,
+                    mathExpression = item.kaspaAmount,
+                    mathResult = "",
+                    lastFinalizedExpression = "",
+                    isFinalized = true
+                )
+            }
+            recalculate()
         }
     }
 

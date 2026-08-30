@@ -20,6 +20,7 @@ import androidx.compose.material.icons.filled.ArrowDropDown
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.History
 import androidx.compose.material.icons.filled.Info
+import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
@@ -126,8 +127,42 @@ fun KaspaMainScreen() {
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text("Kas Unitly", fontWeight = FontWeight.Medium) },
+                title = {
+                    Column {
+                        Text("Kas Unitly", fontWeight = FontWeight.Medium)
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            Box(
+                                modifier = Modifier
+                                    .size(6.dp)
+                                    .background(
+                                        color = if (state.isOffline) MaterialTheme.colorScheme.error else androidx.compose.ui.graphics.Color(0xFF70C7BA),
+                                        shape = CircleShape
+                                    )
+                            )
+                            Spacer(modifier = Modifier.width(4.dp))
+                            Text(
+                                text = state.activePriceSource,
+                                style = MaterialTheme.typography.labelSmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                maxLines = 1
+                            )
+                        }
+                    }
+                },
                 actions = {
+                    IconButton(
+                        onClick = { viewModel.fetchPrices() }
+                    ) {
+                        if (state.isLoading) {
+                            CircularProgressIndicator(
+                                modifier = Modifier.size(18.dp),
+                                strokeWidth = 2.dp,
+                                color = MaterialTheme.colorScheme.primary
+                            )
+                        } else {
+                            Icon(Icons.Default.Refresh, contentDescription = "Refresh Price Feeds")
+                        }
+                    }
                     IconButton(onClick = { showHistory = true }) {
                         Icon(Icons.Default.History, contentDescription = "History")
                     }
@@ -371,7 +406,7 @@ fun ConversionDisplay(state: KaspaState, viewModel: KaspaViewModel) {
             Spacer(modifier = Modifier.width(8.dp))
             val currentPrice = state.prices[state.selectedFiat] ?: 0.0
             Text(
-                text = "1 KAS = ${currentPrice.format(4)}",
+                text = "1 KAS = ${currentPrice.format(4)} ${state.selectedFiat.uppercase()}",
                 style = MaterialTheme.typography.labelSmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant
             )
@@ -504,7 +539,11 @@ fun HistoryBottomSheet(viewModel: KaspaViewModel, onDismiss: () -> Unit) {
                         Surface(
                             modifier = Modifier.fillMaxWidth(),
                             color = MaterialTheme.colorScheme.surfaceVariant,
-                            shape = RoundedCornerShape(12.dp)
+                            shape = RoundedCornerShape(12.dp),
+                            onClick = {
+                                viewModel.restoreFromHistory(item)
+                                onDismiss()
+                            }
                         ) {
                             Column(modifier = Modifier.padding(16.dp)) {
                                 val sdf = SimpleDateFormat("MMM dd, yyyy HH:mm", Locale.getDefault())
@@ -513,7 +552,8 @@ fun HistoryBottomSheet(viewModel: KaspaViewModel, onDismiss: () -> Unit) {
                                 Spacer(modifier = Modifier.height(4.dp))
                                 Row(
                                     modifier = Modifier.fillMaxWidth(),
-                                    horizontalArrangement = Arrangement.SpaceBetween
+                                    horizontalArrangement = Arrangement.SpaceBetween,
+                                    verticalAlignment = Alignment.CenterVertically
                                 ) {
                                     Text("${item.kaspaAmount} KAS", fontWeight = FontWeight.SemiBold)
                                     Text("=", color = MaterialTheme.colorScheme.onSurfaceVariant)
