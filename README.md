@@ -41,15 +41,13 @@ The app conforms to standard **Clean Architecture** and **MVVM (Model-View-ViewM
 
 ---
 
-## ⚙️ Automated CI/CD (GitHub Actions)
+## ⚙️ Automated CI/CD & Releases (GitHub Actions)
 
 A pre-configured GitHub Actions workflow automatically compiles, runs checks, and builds a downloadable signed production **Release APK** on every commit or pull request.
 
 ### **How to find your built APK on GitHub:**
-1. Push this project to your GitHub repository.
-2. Go to the **Actions** tab on your GitHub repository page.
-3. Select the latest **Build Android APK** workflow execution.
-4. Scroll down to the **Artifacts** section at the bottom of the page and download `kas-calculator-release-apk`.
+1. **GitHub Releases (Recommended):** On every push to the default branch (`main` or `master`), the workflow automatically creates a new GitHub Release containing the signed production APK. Simply look at the **Releases** section on the right-hand sidebar of your GitHub repository page!
+2. **GitHub Actions Artifacts:** You can also go to the **Actions** tab on your GitHub repository page, click the latest workflow execution, scroll to the bottom, and download the `kas-calculator-release-apk` artifact.
 
 ---
 
