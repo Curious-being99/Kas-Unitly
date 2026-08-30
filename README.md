@@ -1,17 +1,13 @@
-# Kaspa Calculator (KAS)
-
-A beautifully-designed, high-performance, and resilient **Kaspa (KAS) Calculator** for Android. Built with modern Android development standards using **Kotlin**, **Jetpack Compose (Material 3)**, **Room Database**, **Retrofit**, and lifecycle-aware architecture.
-
----
-
-## ✨ Key Features
-
-*   **🎬 Typewriter Splash Screen:** A sleek, minimal splash interface that dynamically types out `kas calculator` in a glowing Kaspa Cyan accent before smoothly transitioning to the main layout.
-*   **🪙 Live Conversions:** Instantly converts Kaspa (KAS) into USD, EUR, GBP, JPY, and over 40 other world currencies using real-time price feeds.
-*   **💾 Smart Local Caching:** Automatically caches the latest successfully fetched currency rates into the device storage (`SharedPreferences`). If the device is offline when opened, the app remains fully functional with the last known prices.
-*   **🔄 Lifecycle-Aware Auto-Updates:** Listens to Android system lifecycle events. Whenever you switch away and return to the application, it immediately forces a background refresh to fetch the absolute latest price.
-*   **📱 Custom Math Parser Engine:** A safe, robust Recursive Descent Parser that processes advanced math equations, brackets `()`, exponents `^`, and square roots `√` cleanly without risk of runtime crashes.
-*   **🗄️ Persistent Calculation History:** Saves all calculation events securely to a local SQLite database via Room. Calculation history remains permanently stored and is only deleted when explicitly wiped by the user.
+# KAS Calculator & Converter
+A sleek, modern, and highly responsive calculator designed specifically for the Kaspa (KAS) community. This app combines a powerful mathematical expression calculator with a real-time cryptocurrency converter, allowing you to instantly compute math and convert between Kaspa (KAS) and your local fiat currency simultaneously.
+Key Features
+Dual-Purpose Display: Solve complex mathematical equations and immediately see how those calculations translate to Kaspa and fiat values.
+Real-Time Conversion: Seamlessly convert between Kaspa (KAS) and multiple global fiat currencies (including USD, EUR, GBP, and more) with up-to-date exchange rates.
+Interactive Dual Fields: Tap either the Fiat or Kaspa display to activate it as your primary input mode and convert values instantly as you type.
+Advanced Math Keyboard: Includes a custom Material 3 styled scientific keypad featuring standard operators, brackets, decimals, and special functions (
+, 
+, power, etc.) with tactile-like ripple feedback.
+Beautiful Material 3 Design: Features a clean, high-contrast user interface with an elegant dark-theme option, designed with balanced negative space to keep all functions perfectly visible on any screen size.
 
 ---
 
