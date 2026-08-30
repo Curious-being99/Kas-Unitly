@@ -131,15 +131,14 @@ class KaspaViewModel(private val historyDao: HistoryDao, private val prefs: andr
     }
 
     fun onSelectedFiatChanged(fiat: String) {
-        _state.update { it.copy(selectedFiat = fiat) }
+        _state.update { it.copy(selectedFiat = fiat, activeInput = InputMode.KAS) }
         recalculate()
     }
     
     fun setActiveInput(mode: InputMode) {
-        if (_state.value.activeInput == mode) return
-        val currentAmount = if (mode == InputMode.KAS) _state.value.kaspaAmount else _state.value.fiatAmount
-        val initialExpr = if (currentAmount == "0" || currentAmount == "0.00") "" else currentAmount
-        _state.update { it.copy(activeInput = mode, mathExpression = initialExpr, mathResult = "") }
+        // Input always stays anchored to Kaspa zone
+        val initialExpr = if (_state.value.kaspaAmount == "0" || _state.value.kaspaAmount == "0.00") "" else _state.value.kaspaAmount
+        _state.update { it.copy(activeInput = InputMode.KAS, mathExpression = initialExpr, mathResult = "") }
     }
     
     fun onKeypadPress(key: String) {

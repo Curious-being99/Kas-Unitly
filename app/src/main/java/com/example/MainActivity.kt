@@ -218,15 +218,12 @@ fun ConversionDisplay(state: KaspaState, viewModel: KaspaViewModel) {
         verticalArrangement = Arrangement.spacedBy(4.dp)
     ) {
         // Fiat Container
-        val isFiatActive = state.activeInput == InputMode.FIAT
-        
         var expanded by remember { mutableStateOf(false) }
         val fiats = viewModel.supportedFiats
- 
+
         Box(
             modifier = Modifier
                 .fillMaxWidth()
-                .clickable { viewModel.setActiveInput(InputMode.FIAT) }
                 .padding(vertical = 4.dp, horizontal = 12.dp)
         ) {
             Row(
@@ -285,20 +282,18 @@ fun ConversionDisplay(state: KaspaState, viewModel: KaspaViewModel) {
                         style = MaterialTheme.typography.headlineLarge.copy(
                             fontFamily = FontFamily.SansSerif
                         ),
-                        color = if (isFiatActive) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
                         fontWeight = FontWeight.Normal,
                         modifier = Modifier.padding(horizontal = 4.dp, vertical = 2.dp)
                     )
                 }
             }
         }
- 
+
         // KAS Container
-        val isKasActive = state.activeInput == InputMode.KAS
         Box(
             modifier = Modifier
                 .fillMaxWidth()
-                .clickable { viewModel.setActiveInput(InputMode.KAS) }
                 .padding(vertical = 4.dp, horizontal = 12.dp)
         ) {
             Row(
@@ -320,7 +315,7 @@ fun ConversionDisplay(state: KaspaState, viewModel: KaspaViewModel) {
                         style = MaterialTheme.typography.headlineLarge.copy(
                             fontFamily = FontFamily.SansSerif
                         ),
-                        color = if (isKasActive) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant,
+                        color = MaterialTheme.colorScheme.primary,
                         fontWeight = FontWeight.Normal,
                         modifier = Modifier.padding(horizontal = 4.dp, vertical = 2.dp)
                     )
