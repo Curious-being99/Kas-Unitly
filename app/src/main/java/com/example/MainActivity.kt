@@ -147,7 +147,6 @@ fun KaspaMainScreen() {
                 modifier = Modifier
                     .weight(1f)
                     .padding(horizontal = 16.dp)
-                    .verticalScroll(rememberScrollState())
                     .padding(vertical = 16.dp),
                 verticalArrangement = Arrangement.spacedBy(16.dp)
             ) {
