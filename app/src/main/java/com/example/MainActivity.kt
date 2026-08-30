@@ -27,6 +27,8 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.text.PlatformTextStyle
+import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
@@ -148,15 +150,12 @@ fun KaspaMainScreen() {
             Column(
                 modifier = Modifier
                     .weight(1f)
-                    .padding(horizontal = 16.dp)
-                    .padding(vertical = 8.dp),
+                    .fillMaxWidth()
+                    .padding(horizontal = 16.dp, vertical = 4.dp),
                 verticalArrangement = Arrangement.SpaceBetween
             ) {
                 ConversionDisplay(state = state, viewModel = viewModel)
-                Column {
-                    MathDisplay(state = state)
-                    Spacer(modifier = Modifier.height(24.dp))
-                }
+                MathDisplay(state = state)
             }
             
             KeypadSection(viewModel = viewModel)
@@ -170,39 +169,43 @@ fun KaspaMainScreen() {
 
 @Composable
 fun MathDisplay(state: KaspaState) {
+    val hasOperator = state.mathExpression.any { it in "+-×÷%π√∆~|:<>^\\()" }
+    val showResult = state.mathResult.isNotEmpty() && hasOperator
+
     Column(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(start = 16.dp, end = 24.dp)
-            .padding(bottom = 16.dp),
+            .padding(horizontal = 16.dp, vertical = 6.dp),
         horizontalAlignment = Alignment.End
     ) {
-        val hasOperator = state.mathExpression.any { it in "+-×÷%π√∆~|:<>^\\()" }
-        val showResult = state.mathResult.isNotEmpty() && hasOperator
-
         Text(
             text = state.mathExpression.ifEmpty { " " },
-            style = MaterialTheme.typography.titleMedium.copy(
-                fontFamily = FontFamily.SansSerif
+            style = TextStyle(
+                fontFamily = FontFamily.SansSerif,
+                fontSize = 18.sp,
+                lineHeight = 24.sp,
+                fontWeight = FontWeight.Normal,
+                platformStyle = PlatformTextStyle(includeFontPadding = true)
             ),
             color = MaterialTheme.colorScheme.onSurfaceVariant,
             textAlign = TextAlign.End,
-            maxLines = 1,
-            modifier = Modifier.padding(end = 4.dp)
+            maxLines = 1
         )
         
-        Spacer(modifier = Modifier.height(4.dp))
+        Spacer(modifier = Modifier.height(2.dp))
         
         Text(
             text = if (showResult) "= ${state.mathResult}" else " ",
-            style = MaterialTheme.typography.headlineLarge.copy(
+            style = TextStyle(
                 fontFamily = FontFamily.SansSerif,
-                fontWeight = FontWeight.SemiBold
+                fontSize = 32.sp,
+                lineHeight = 38.sp,
+                fontWeight = FontWeight.SemiBold,
+                platformStyle = PlatformTextStyle(includeFontPadding = true)
             ),
             color = MaterialTheme.colorScheme.onBackground,
             textAlign = TextAlign.End,
-            maxLines = 1,
-            modifier = Modifier.padding(end = 4.dp)
+            maxLines = 1
         )
     }
 }
@@ -353,7 +356,7 @@ fun KeypadSection(viewModel: KaspaViewModel) {
         modifier = Modifier
             .fillMaxWidth()
             .background(MaterialTheme.colorScheme.background)
-            .padding(horizontal = 8.dp, vertical = 8.dp)
+            .padding(horizontal = 8.dp, vertical = 4.dp)
     ) {
         val keys = listOf(
             listOf("π", "√", "∆", "^", "\\"),
@@ -368,16 +371,16 @@ fun KeypadSection(viewModel: KaspaViewModel) {
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(bottom = 6.dp),
+                    .padding(bottom = 4.dp),
                 horizontalArrangement = Arrangement.SpaceBetween
             ) {
                 row.forEach { key ->
                     Box(
                         modifier = Modifier
                             .weight(1f)
-                            .height(58.dp)
+                            .height(48.dp)
                             .padding(horizontal = 2.dp)
-                            .clip(RoundedCornerShape(29.dp))
+                            .clip(RoundedCornerShape(24.dp))
                             .clickable(enabled = key != " ") { viewModel.onKeypadPress(key) },
                         contentAlignment = Alignment.Center
                     ) {
@@ -386,12 +389,12 @@ fun KeypadSection(viewModel: KaspaViewModel) {
                                 Icons.Outlined.Backspace,
                                 contentDescription = "Backspace",
                                 tint = MaterialTheme.colorScheme.onBackground,
-                                modifier = Modifier.size(24.dp)
+                                modifier = Modifier.size(22.dp)
                             )
                         } else if (key != " ") {
                             Text(
                                 text = key,
-                                fontSize = 24.sp,
+                                fontSize = 22.sp,
                                 fontWeight = FontWeight.Normal,
                                 color = MaterialTheme.colorScheme.onBackground
                             )
