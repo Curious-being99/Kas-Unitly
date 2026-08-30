@@ -41,13 +41,13 @@ jobs:
         KEY_ALIAS: ${{ secrets.KEY_ALIAS }}
       run: |
         gradle :app:assembleRelease --no-daemon
-        mv app/build/outputs/apk/release/app-release.apk app/build/outputs/apk/release/kas-calculator-release.apk
+        mv app/build/outputs/apk/release/app-release.apk app/build/outputs/apk/release/kas-unitly-release.apk
 
     - name: Upload Signed Release APK Artifact
       uses: actions/upload-artifact@v4
       with:
-        name: kas-calculator-release-apk
-        path: app/build/outputs/apk/release/kas-calculator-release.apk
+        name: kas-unitly-release-apk
+        path: app/build/outputs/apk/release/kas-unitly-release.apk
         retention-days: 7
 
     - name: Create GitHub Release
@@ -58,7 +58,7 @@ jobs:
         name: Release v1.0.${{ github.run_number }}
         draft: false
         prerelease: false
-        files: app/build/outputs/apk/release/kas-calculator-release.apk
+        files: app/build/outputs/apk/release/kas-unitly-release.apk
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 

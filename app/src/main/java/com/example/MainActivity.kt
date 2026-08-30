@@ -73,7 +73,7 @@ fun KaspaApp() {
 
 @Composable
 fun SplashScreen(onSplashFinished: () -> Unit) {
-    val fullText = "kas calculator"
+    val fullText = "kas Unitly"
     var displayedText by remember { mutableStateOf("") }
     
     LaunchedEffect(Unit) {
@@ -126,7 +126,7 @@ fun KaspaMainScreen() {
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text("KAS Calculator", fontWeight = FontWeight.Medium) },
+                title = { Text("Kas Unitly", fontWeight = FontWeight.Medium) },
                 actions = {
                     IconButton(onClick = { showHistory = true }) {
                         Icon(Icons.Default.History, contentDescription = "History")

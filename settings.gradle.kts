@@ -22,6 +22,6 @@ dependencyResolutionManagement {
   }
 }
 
-rootProject.name = "Kaspa Calculator"
+rootProject.name = "Kas Unitly"
 
 include(":app")

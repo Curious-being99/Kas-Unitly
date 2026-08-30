@@ -1,5 +1,5 @@
 {
-  "name": "Kaspa Calculator",
+  "name": "Kas Unitly",
   "description": "Calculate Kaspa price with Fiat currencies",
   "requestFramePermissions": [],
   "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
