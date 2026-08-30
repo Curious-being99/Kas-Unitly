@@ -151,7 +151,10 @@ fun KaspaMainScreen() {
                 verticalArrangement = Arrangement.SpaceBetween
             ) {
                 ConversionDisplay(state = state, viewModel = viewModel)
-                MathDisplay(state = state)
+                Column {
+                    MathDisplay(state = state)
+                    Spacer(modifier = Modifier.height(24.dp))
+                }
             }
             
             KeypadSection(viewModel = viewModel)
