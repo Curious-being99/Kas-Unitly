@@ -1,13 +1,16 @@
 # Kas Unitly
 
-A sleek, modern, and highly responsive calculator and converter designed specifically for the Kaspa (KAS) community. This app combines a powerful mathematical expression calculator with a real-time cryptocurrency converter, allowing you to instantly compute math and convert between Kaspa (KAS) and your local fiat currency simultaneously.
+Real-time Kaspa (KAS) converter and precision financial calculator supporting global fiat currencies.
+
+A sleek, modern, and highly responsive Android application designed specifically for the Kaspa (KAS) community and cryptocurrency enthusiasts. Kas Unitly combines a high-precision mathematical expression engine with real-time exchange rates, allowing you to instantly perform arithmetic, calculate fees/percentages, and convert between Kaspa (KAS) and your chosen fiat currency simultaneously.
 
 ### Key Features
-- **Dual-Purpose Display**: Solve complex mathematical equations and immediately see how those calculations translate to Kaspa and fiat values.
-- **Real-Time Conversion**: Seamlessly convert between Kaspa (KAS) and multiple global fiat currencies (including USD, EUR, GBP, and more) with up-to-date exchange rates.
-- **Kaspa-Centric Calculation**: Keypad computations directly compute Kaspa quantities with instant real-time fiat estimation.
-- **Advanced Math Keyboard**: Includes a custom Material 3 styled scientific keypad featuring standard operators, brackets, decimals, and special functions ($\pi$, $\sqrt{}$, power, etc.) with tactile ripple feedback.
-- **Beautiful Material 3 Design**: Features a clean, high-contrast user interface with an elegant dark-theme option, designed with balanced negative space to keep all functions perfectly visible on any screen size.
+- **Real-Time KAS & Fiat Conversion**: Seamlessly convert between Kaspa (KAS) and multiple global fiat currencies (including USD, EUR, GBP, CAD, AUD, JPY, and more) with live exchange rates.
+- **Precision Math Engine**: Zero-error calculation engine supporting standard arithmetic (`+`, `-`, `×`, `÷`), modulo/remainder (`%`), percentage additions/discounts (`100 + 20% = 120`), exponentiation (`^`), square roots (`√`), constants (`π`), and bracket grouping with strict BODMAS/PEMDAS precedence.
+- **Dual-Purpose Live Display**: Enter values in Kaspa or standard numbers and immediately see the live mathematical result alongside real-time fiat equivalent values.
+- **Calculation History & Room Database**: Automatically preserves previous calculations and conversions locally using Android Jetpack Room with full history search, replay, and management.
+- **Tactile Material 3 Keypad**: Custom 5-column scientific keypad with intuitive color-coded keys, operator overwrite protection, and smooth haptic/ripple feedback.
+- **Clean Modern Design**: High-contrast, edge-to-edge layout with full support for dark mode and adaptive sizing for phones, foldables, and tablets.
 
 ---
 
@@ -22,17 +25,18 @@ The app conforms to standard **Clean Architecture** and **MVVM (Model-View-ViewM
 │           ├── java
 │           │   └── com
 │           │       └── example
-│           │           ├── BaseApplication.kt        # App context and database initialization
-│           │           ├── MainActivity.kt           # Screen containers, Splash screen, and UI layout
-│           │           ├── KaspaApi.kt               # Retrofit networking client and CoinGecko API
-│           │           ├── KaspaViewModel.kt         # Live state, caching management, and math evaluation
+│           │           ├── BaseApplication.kt        # Application context and database setup
+│           │           ├── MainActivity.kt           # Jetpack Compose UI, Splash screen, and Keypad
+│           │           ├── MathEvaluator.kt          # Robust mathematical evaluation & tokenizer engine
+│           │           ├── KaspaApi.kt               # Retrofit networking client for live exchange rates
+│           │           ├── KaspaViewModel.kt         # State management, caching, and conversion logic
 │           │           └── data
 │           │               ├── HistoryEntity.kt      # Database model for calculation items
-│           │               ├── HistoryDao.kt         # Local Room Database operations
+│           │               ├── HistoryDao.kt         # Room DAO for local history persistence
 │           │               └── AppDatabase.kt        # Room database builder
 │           └── res
 │               └── values
-│                   └── strings.xml                   # App-wide string resources
+│                   └── strings.xml                   # Application string resources
 ```
 
 ---

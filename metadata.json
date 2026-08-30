@@ -1,6 +1,6 @@
 {
   "name": "Kas Unitly",
-  "description": "Calculate Kaspa price with Fiat currencies",
+  "description": "Real-time Kaspa (KAS) converter and precision financial calculator supporting global fiat currencies",
   "requestFramePermissions": [],
   "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
 }
