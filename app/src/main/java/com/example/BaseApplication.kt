@@ -14,7 +14,7 @@ class BaseApplication : Application() {
             this,
             AppDatabase::class.java,
             "kaspa-history-db"
-        ).fallbackToDestructiveMigration()
+        ).fallbackToDestructiveMigration(dropAllTables = false)
             .build()
     }
 }

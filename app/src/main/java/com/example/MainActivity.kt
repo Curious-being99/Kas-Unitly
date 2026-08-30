@@ -14,13 +14,13 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.outlined.Backspace
 import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material.icons.filled.ArrowDropDown
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.History
 import androidx.compose.material.icons.filled.Info
 import androidx.compose.material.icons.filled.Settings
-import androidx.compose.material.icons.outlined.Backspace
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -170,7 +170,7 @@ fun KaspaMainScreen() {
 @Composable
 fun MathDisplay(state: KaspaState) {
     val hasOperator = state.mathExpression.any { it in "+-×÷%π√∆~|:<>^\\()" }
-    val showResult = state.mathResult.isNotEmpty() && hasOperator
+    val showLivePreview = !state.isFinalized && hasOperator && state.mathResult.isNotEmpty() && state.mathResult != state.mathExpression
 
     Column(
         modifier = Modifier
@@ -178,35 +178,69 @@ fun MathDisplay(state: KaspaState) {
             .padding(horizontal = 16.dp, vertical = 6.dp),
         horizontalAlignment = Alignment.End
     ) {
-        Text(
-            text = state.mathExpression.ifEmpty { " " },
-            style = TextStyle(
-                fontFamily = FontFamily.SansSerif,
-                fontSize = 18.sp,
-                lineHeight = 24.sp,
-                fontWeight = FontWeight.Normal,
-                platformStyle = PlatformTextStyle(includeFontPadding = true)
-            ),
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
-            textAlign = TextAlign.End,
-            maxLines = 1
-        )
-        
-        Spacer(modifier = Modifier.height(2.dp))
-        
-        Text(
-            text = if (showResult) "= ${state.mathResult}" else " ",
-            style = TextStyle(
-                fontFamily = FontFamily.SansSerif,
-                fontSize = 32.sp,
-                lineHeight = 38.sp,
-                fontWeight = FontWeight.SemiBold,
-                platformStyle = PlatformTextStyle(includeFontPadding = true)
-            ),
-            color = MaterialTheme.colorScheme.onBackground,
-            textAlign = TextAlign.End,
-            maxLines = 1
-        )
+        if (state.isFinalized) {
+            // Finalized state after pressing '='
+            Text(
+                text = if (state.lastFinalizedExpression.isNotEmpty()) "${state.lastFinalizedExpression} =" else " ",
+                style = TextStyle(
+                    fontFamily = FontFamily.SansSerif,
+                    fontSize = 18.sp,
+                    lineHeight = 24.sp,
+                    fontWeight = FontWeight.Normal,
+                    platformStyle = PlatformTextStyle(includeFontPadding = true)
+                ),
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                textAlign = TextAlign.End,
+                maxLines = 1
+            )
+            
+            Spacer(modifier = Modifier.height(2.dp))
+            
+            Text(
+                text = state.mathExpression.ifEmpty { "0" },
+                style = TextStyle(
+                    fontFamily = FontFamily.SansSerif,
+                    fontSize = 32.sp,
+                    lineHeight = 38.sp,
+                    fontWeight = FontWeight.SemiBold,
+                    platformStyle = PlatformTextStyle(includeFontPadding = true)
+                ),
+                color = MaterialTheme.colorScheme.primary,
+                textAlign = TextAlign.End,
+                maxLines = 1
+            )
+        } else {
+            // Actively typing numbers or formulas before pressing '='
+            Text(
+                text = if (showLivePreview) "= ${state.mathResult}" else " ",
+                style = TextStyle(
+                    fontFamily = FontFamily.SansSerif,
+                    fontSize = 18.sp,
+                    lineHeight = 24.sp,
+                    fontWeight = FontWeight.Normal,
+                    platformStyle = PlatformTextStyle(includeFontPadding = true)
+                ),
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                textAlign = TextAlign.End,
+                maxLines = 1
+            )
+            
+            Spacer(modifier = Modifier.height(2.dp))
+            
+            Text(
+                text = state.mathExpression.ifEmpty { "0" },
+                style = TextStyle(
+                    fontFamily = FontFamily.SansSerif,
+                    fontSize = 32.sp,
+                    lineHeight = 38.sp,
+                    fontWeight = FontWeight.SemiBold,
+                    platformStyle = PlatformTextStyle(includeFontPadding = true)
+                ),
+                color = MaterialTheme.colorScheme.onBackground,
+                textAlign = TextAlign.End,
+                maxLines = 1
+            )
+        }
     }
 }
 
@@ -237,7 +271,7 @@ fun ConversionDisplay(state: KaspaState, viewModel: KaspaViewModel) {
                         onExpandedChange = { expanded = !expanded }
                     ) {
                         Surface(
-                            modifier = Modifier.menuAnchor(),
+                            modifier = Modifier.menuAnchor(MenuAnchorType.PrimaryNotEditable),
                             color = MaterialTheme.colorScheme.surfaceVariant,
                             shape = RoundedCornerShape(8.dp)
                         ) {
@@ -351,54 +385,77 @@ fun KeypadSection(viewModel: KaspaViewModel) {
         modifier = Modifier
             .fillMaxWidth()
             .background(MaterialTheme.colorScheme.background)
-            .padding(horizontal = 8.dp, vertical = 4.dp)
+            .padding(horizontal = 8.dp, vertical = 6.dp)
     ) {
         val keys = listOf(
-            listOf("π", "√", "∆", "^", "\\"),
             listOf("AC", "(", ")", "%", "÷"),
-            listOf("7", "8", "9", "×", "<"),
-            listOf("4", "5", "6", "-", ">"),
-            listOf("1", "2", "3", "+", ":"),
-            listOf("0", ".", "•", "=", "DEL")
+            listOf("π", "7", "8", "9", "×"),
+            listOf("√", "4", "5", "6", "-"),
+            listOf("^", "1", "2", "3", "+"),
+            listOf("±", "0", ".", "DEL", "=")
         )
 
         keys.forEach { row ->
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(bottom = 4.dp),
-                horizontalArrangement = Arrangement.SpaceBetween
+                    .padding(bottom = 6.dp),
+                horizontalArrangement = Arrangement.spacedBy(6.dp)
             ) {
                 row.forEach { key ->
-                    Box(
+                    val isOperator = key in listOf("÷", "×", "-", "+")
+                    val isEquals = key == "="
+                    val isAction = key in listOf("AC", "DEL")
+                    val isSci = key in listOf("π", "√", "^", "%", "(", ")", "±")
+
+                    val containerColor = when {
+                        isEquals -> MaterialTheme.colorScheme.primary
+                        isOperator -> MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.7f)
+                        isAction -> MaterialTheme.colorScheme.errorContainer.copy(alpha = 0.5f)
+                        isSci -> MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.6f)
+                        else -> MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.3f)
+                    }
+
+                    val contentColor = when {
+                        isEquals -> MaterialTheme.colorScheme.onPrimary
+                        isOperator -> MaterialTheme.colorScheme.onPrimaryContainer
+                        isAction -> MaterialTheme.colorScheme.onErrorContainer
+                        isSci -> MaterialTheme.colorScheme.onSurfaceVariant
+                        else -> MaterialTheme.colorScheme.onBackground
+                    }
+
+                    Surface(
                         modifier = Modifier
                             .weight(1f)
-                            .height(48.dp)
-                            .padding(horizontal = 2.dp)
-                            .clip(RoundedCornerShape(24.dp))
-                            .clickable(enabled = key != " ") { viewModel.onKeypadPress(key) },
-                        contentAlignment = Alignment.Center
+                            .height(52.dp),
+                        shape = RoundedCornerShape(16.dp),
+                        color = containerColor,
+                        onClick = { viewModel.onKeypadPress(key) }
                     ) {
-                        if (key == "DEL") {
-                            Icon(
-                                Icons.Outlined.Backspace,
-                                contentDescription = "Backspace",
-                                tint = MaterialTheme.colorScheme.onBackground,
-                                modifier = Modifier.size(22.dp)
-                            )
-                        } else if (key != " ") {
-                            Text(
-                                text = key,
-                                fontSize = 22.sp,
-                                fontWeight = FontWeight.Normal,
-                                color = MaterialTheme.colorScheme.onBackground
-                            )
+                        Box(
+                            modifier = Modifier.fillMaxSize(),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            if (key == "DEL") {
+                                Icon(
+                                    Icons.AutoMirrored.Outlined.Backspace,
+                                    contentDescription = "Backspace",
+                                    tint = contentColor,
+                                    modifier = Modifier.size(22.dp)
+                                )
+                            } else {
+                                Text(
+                                    text = key,
+                                    fontSize = if (isEquals || isOperator) 22.sp else 20.sp,
+                                    fontWeight = if (isEquals || isOperator || isAction) FontWeight.Bold else FontWeight.Medium,
+                                    color = contentColor
+                                )
+                            }
                         }
                     }
                 }
             }
         }
-        
     }
 }
 

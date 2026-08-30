@@ -102,6 +102,7 @@ dependencies {
   // implementation(libs.coil.compose)
   implementation(libs.converter.moshi)
   implementation(libs.firebase.ai)
+  implementation(libs.exp4j)
   // Uncomment to use Firestore:
   // implementation(libs.firebase.firestore)
 

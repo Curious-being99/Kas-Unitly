@@ -34,7 +34,9 @@ data class KaspaState(
     val error: String? = null,
     val lastUpdated: Long = 0L,
     val mathExpression: String = "",
-    val mathResult: String = ""
+    val mathResult: String = "",
+    val lastFinalizedExpression: String = "",
+    val isFinalized: Boolean = false
 )
 
 class KaspaViewModel(private val historyDao: HistoryDao, private val prefs: android.content.SharedPreferences) : ViewModel() {
@@ -146,25 +148,89 @@ class KaspaViewModel(private val historyDao: HistoryDao, private val prefs: andr
         val currentExpr = st.mathExpression
         var newExpr = currentExpr
         var shouldEvaluateFinal = false
+        var nextFinalized = st.isFinalized
+        var nextLastFinalizedExpr = st.lastFinalizedExpression
+
+        val isDigitOrDot = key in listOf("0", "1", "2", "3", "4", "5", "6", "7", "8", "9", ".", "•")
+        val isBinaryOperator = key in listOf("+", "-", "×", "÷", "^", "%")
 
         when (key) {
             "AC" -> {
                 saveToHistory()
                 newExpr = ""
+                nextFinalized = false
+                nextLastFinalizedExpr = ""
             }
             "DEL" -> {
+                if (nextFinalized) {
+                    nextFinalized = false
+                    nextLastFinalizedExpr = ""
+                }
                 if (currentExpr.isNotEmpty()) {
-                    newExpr = currentExpr.dropLast(1)
+                    if (currentExpr.endsWith("sqrt(")) {
+                        newExpr = currentExpr.dropLast(5)
+                    } else {
+                        newExpr = currentExpr.dropLast(1)
+                    }
+                }
+            }
+            "±" -> {
+                if (nextFinalized) {
+                    nextFinalized = false
+                    nextLastFinalizedExpr = ""
+                }
+                if (currentExpr.startsWith("-(") && currentExpr.endsWith(")")) {
+                    newExpr = currentExpr.substring(2, currentExpr.length - 1)
+                } else if (currentExpr.startsWith("-")) {
+                    newExpr = currentExpr.substring(1)
+                } else if (currentExpr.isNotEmpty()) {
+                    newExpr = "-($currentExpr)"
+                } else {
+                    newExpr = "-"
                 }
             }
             "=" -> {
-                shouldEvaluateFinal = true
+                if (currentExpr.isNotEmpty()) {
+                    shouldEvaluateFinal = true
+                }
             }
             " " -> {
                 // Ignore empty keys
             }
             else -> {
-                newExpr = currentExpr + key
+                val keyToAppend = when (key) {
+                    "•" -> "."
+                    else -> key
+                }
+
+                if (nextFinalized) {
+                    if (isDigitOrDot || key == "π" || key == "√" || key == "(") {
+                        // Start fresh calculation when typing a new number/function after equals
+                        newExpr = if (keyToAppend == "√") "√" else keyToAppend
+                    } else {
+                        // Continue/chain calculation on previous result with operator
+                        newExpr = currentExpr + keyToAppend
+                    }
+                    nextFinalized = false
+                    nextLastFinalizedExpr = ""
+                } else {
+                    if (isBinaryOperator && currentExpr.isNotEmpty()) {
+                        val lastChar = currentExpr.last().toString()
+                        if (lastChar in listOf("+", "-", "×", "÷", "^")) {
+                            // If pressing minus after multiply or divide, allow unary minus (e.g. 5 × -)
+                            if (keyToAppend == "-" && (lastChar == "×" || lastChar == "÷")) {
+                                newExpr = currentExpr + keyToAppend
+                            } else {
+                                // Replace trailing operator with the new operator
+                                newExpr = currentExpr.dropLast(1) + keyToAppend
+                            }
+                        } else {
+                            newExpr = currentExpr + keyToAppend
+                        }
+                    } else {
+                        newExpr = currentExpr + keyToAppend
+                    }
+                }
             }
         }
 
@@ -173,11 +239,20 @@ class KaspaViewModel(private val historyDao: HistoryDao, private val prefs: andr
 
         if (shouldEvaluateFinal) {
             if (resultVal != null) {
+                nextLastFinalizedExpr = currentExpr
                 newExpr = resultStr
+                nextFinalized = true
             }
         }
 
-        _state.update { it.copy(mathExpression = newExpr, mathResult = resultStr) }
+        _state.update { 
+            it.copy(
+                mathExpression = newExpr,
+                mathResult = resultStr,
+                lastFinalizedExpression = nextLastFinalizedExpr,
+                isFinalized = nextFinalized
+            ) 
+        }
 
         // Automatically update the active input and convert if valid
         if (resultVal != null) {
@@ -201,99 +276,23 @@ class KaspaViewModel(private val historyDao: HistoryDao, private val prefs: andr
     }
 
     private fun evaluateMath(expr: String): Double? {
-        if (expr.isEmpty()) return null
-        
-        var cleanExpr = expr.replace("×", "*")
-            .replace("÷", "/")
-            .replace("π", Math.PI.toString())
-            .replace("•", ".")
-            .replace(":", "/") // Assuming : is used for division if typed
-            .replace("\\", "/")
-        
-        return try {
-            eval(cleanExpr)
-        } catch (e: Exception) {
-            null
-        }
-    }
-
-    private fun eval(str: String): Double {
-        return object : Any() {
-            var pos = -1
-            var ch = 0
-            fun nextChar() {
-                ch = if (++pos < str.length) str[pos].code else -1
-            }
-
-            fun eat(charToEat: Int): Boolean {
-                while (ch == ' '.code) nextChar()
-                if (ch == charToEat) {
-                    nextChar()
-                    return true
-                }
-                return false
-            }
-
-            fun parse(): Double {
-                nextChar()
-                val x = parseExpression()
-                if (pos < str.length) throw RuntimeException("Unexpected: " + ch.toChar())
-                return x
-            }
-
-            fun parseExpression(): Double {
-                var x = parseTerm()
-                while (true) {
-                    if (eat('+'.code)) x += parseTerm()
-                    else if (eat('-'.code)) x -= parseTerm()
-                    else return x
-                }
-            }
-
-            fun parseTerm(): Double {
-                var x = parseFactor()
-                while (true) {
-                    if (eat('*'.code)) x *= parseFactor()
-                    else if (eat('/'.code)) x /= parseFactor()
-                    else if (eat('%'.code)) x %= parseFactor()
-                    else return x
-                }
-            }
-
-            fun parseFactor(): Double {
-                if (eat('+'.code)) return parseFactor()
-                if (eat('-'.code)) return -parseFactor()
-                var x = 0.0
-                val startPos = pos
-                if (eat('('.code)) {
-                    x = parseExpression()
-                    eat(')'.code)
-                } else if ((ch >= '0'.code && ch <= '9'.code) || ch == '.'.code || ch == 'E'.code) {
-                    while ((ch >= '0'.code && ch <= '9'.code) || ch == '.'.code || ch == 'E'.code) nextChar()
-                    x = str.substring(startPos, pos).toDouble()
-                } else if (eat('√'.code)) {
-                    x = Math.sqrt(parseFactor())
-                } else {
-                    throw RuntimeException("Unexpected: " + ch.toChar())
-                }
-                
-                if (eat('^'.code)) x = Math.pow(x, parseFactor())
-                
-                return x
-            }
-        }.parse()
+        return MathEvaluator.evaluate(expr)
     }
 
     private fun formatResult(value: Double): String {
         if (value.isNaN() || value.isInfinite()) return ""
-        if (value == value.toLong().toDouble()) {
-            return value.toLong().toString()
-        }
-        val formatted = String.format(java.util.Locale.US, "%.6f", value)
-        return if (formatted.contains(".")) {
-            formatted.trimEnd('0').trimEnd('.')
-        } else {
-            formatted
+        return try {
+            val bd = java.math.BigDecimal.valueOf(value)
+                .setScale(10, java.math.RoundingMode.HALF_UP)
+                .stripTrailingZeros()
+            val plain = bd.toPlainString()
+            if (plain == "-0") "0" else plain
+        } catch (e: Exception) {
+            if (value == value.toLong().toDouble()) {
+                value.toLong().toString()
+            } else {
+                String.format(java.util.Locale.US, "%.6f", value).trimEnd('0').trimEnd('.')
+            }
         }
     }
 
