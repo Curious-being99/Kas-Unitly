@@ -45,13 +45,7 @@ android {
       isCrunchPngs = false
       isMinifyEnabled = false
       proguardFiles(getDefaultProguardFile("proguard-android-optimize.txt"), "proguard-rules.pro")
-      
-      val keyPath = System.getenv("KEYSTORE_PATH") ?: "${rootDir}/my-upload-key.jks"
-      if (file(keyPath).exists() && !System.getenv("STORE_PASSWORD").isNullOrEmpty()) {
-        signingConfig = signingConfigs.getByName("release")
-      } else {
-        signingConfig = null
-      }
+      signingConfig = signingConfigs.getByName("release")
     }
     debug { signingConfig = signingConfigs.getByName("debugConfig") }
   }
