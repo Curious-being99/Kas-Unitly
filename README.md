@@ -51,29 +51,6 @@ A pre-configured GitHub Actions workflow automatically compiles, runs checks, an
 3. Select the latest **Build Android APK** workflow execution.
 4. Scroll down to the **Artifacts** section at the bottom of the page and download `kas-calculator-unsigned-apk` or `kas-calculator-release-apk`.
 
-### **🔑 Setting up Release Signing (GitHub Secrets):**
-
-To build a secure, signed **Release APK** automatically, add the following Secrets to your GitHub Repository (**Settings > Secrets and variables > Actions > New repository secret**):
-
-1. **`RELEASE_KEYSTORE_BASE64`**: The Base64 encoded string of your release keystore (`.jks` / `.keystore`) file.
-   * *To generate a keystore:* 
-     ```bash
-     keytool -genkey -v -keystore my-upload-key.jks -alias upload -keyalg RSA -keysize 2048 -validity 10000
-     ```
-   * *To convert it to Base64 (Mac/Linux):* 
-     ```bash
-     base64 -i my-upload-key.jks | tr -d '\n'
-     # Or: openssl base64 -A -in my-upload-key.jks
-     ```
-   * *To convert it to Base64 (Windows PowerShell):*
-     ```powershell
-     [Convert]::ToBase64String([IO.File]::ReadAllBytes("my-upload-key.jks")) | Out-File -FilePath keystore_base64.txt
-     ```
-2. **`STORE_PASSWORD`**: The password chosen when creating the keystore.
-3. **`KEY_PASSWORD`**: The password chosen for the key alias.
-
-Once these secrets are configured on GitHub, subsequent action runs will automatically generate and attach a signed production-ready **`kas-calculator-release-apk`** artifact!
-
 ---
 
 ## 🛠️ Build and Development
@@ -96,5 +73,6 @@ gradle :app:testDebugUnitTest
 
 ---
 
-## 🔒 Security Posture
-Refer to [GPT_SECURITY.md](./GPT_SECURITY.md) for details about the mathematical parser security, credentials policy, local database sanitation, and prompt integrity practices.
+## 📄 License
+
+This project is licensed under the MIT License - see the [LICENSE](./LICENSE) file for details.
