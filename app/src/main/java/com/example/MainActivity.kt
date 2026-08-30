@@ -147,8 +147,8 @@ fun KaspaMainScreen() {
                 modifier = Modifier
                     .weight(1f)
                     .padding(horizontal = 16.dp)
-                    .padding(vertical = 16.dp),
-                verticalArrangement = Arrangement.spacedBy(16.dp)
+                    .padding(vertical = 8.dp),
+                verticalArrangement = Arrangement.SpaceEvenly
             ) {
                 MathDisplay(state = state)
                 ConversionDisplay(state = state, viewModel = viewModel)
@@ -201,12 +201,12 @@ fun ConversionDisplay(state: KaspaState, viewModel: KaspaViewModel) {
         
         var expanded by remember { mutableStateOf(false) }
         val fiats = viewModel.supportedFiats
-
+ 
         Box(
             modifier = Modifier
                 .fillMaxWidth()
                 .clickable { viewModel.setActiveInput(InputMode.FIAT) }
-                .padding(vertical = 8.dp, horizontal = 16.dp)
+                .padding(vertical = 4.dp, horizontal = 12.dp)
         ) {
             Row(
                 modifier = Modifier.fillMaxWidth(),
@@ -227,7 +227,7 @@ fun ConversionDisplay(state: KaspaState, viewModel: KaspaViewModel) {
                                 modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp),
                                 verticalAlignment = Alignment.CenterVertically
                             ) {
-                                Text(
+                                  Text(
                                     text = state.selectedFiat.uppercase(),
                                     style = MaterialTheme.typography.labelMedium,
                                     color = MaterialTheme.colorScheme.onSurfaceVariant,
@@ -269,14 +269,14 @@ fun ConversionDisplay(state: KaspaState, viewModel: KaspaViewModel) {
                 }
             }
         }
-
+ 
         // KAS Container
         val isKasActive = state.activeInput == InputMode.KAS
         Box(
             modifier = Modifier
                 .fillMaxWidth()
                 .clickable { viewModel.setActiveInput(InputMode.KAS) }
-                .padding(vertical = 8.dp, horizontal = 16.dp)
+                .padding(vertical = 4.dp, horizontal = 12.dp)
         ) {
             Row(
                 modifier = Modifier.fillMaxWidth(),
@@ -302,7 +302,7 @@ fun ConversionDisplay(state: KaspaState, viewModel: KaspaViewModel) {
                 }
             }
         }
-
+ 
         // Info Row
         Row(
             modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp),
@@ -331,7 +331,7 @@ fun KeypadSection(viewModel: KaspaViewModel) {
         modifier = Modifier
             .fillMaxWidth()
             .background(MaterialTheme.colorScheme.background)
-            .padding(horizontal = 8.dp, vertical = 16.dp)
+            .padding(horizontal = 8.dp, vertical = 8.dp)
     ) {
         val keys = listOf(
             listOf("π", "√", "∆", "^", "\\"),
@@ -353,9 +353,9 @@ fun KeypadSection(viewModel: KaspaViewModel) {
                     Box(
                         modifier = Modifier
                             .weight(1f)
-                            .height(56.dp)
+                            .height(50.dp)
                             .padding(horizontal = 2.dp)
-                            .clip(RoundedCornerShape(28.dp))
+                            .clip(RoundedCornerShape(25.dp))
                             .clickable(enabled = key != " ") { viewModel.onKeypadPress(key) },
                         contentAlignment = Alignment.Center
                     ) {
