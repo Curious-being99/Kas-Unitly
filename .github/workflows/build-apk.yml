@@ -47,6 +47,7 @@ jobs:
         KEYSTORE_PATH: ../my-upload-key.jks
         STORE_PASSWORD: ${{ secrets.STORE_PASSWORD }}
         KEY_PASSWORD: ${{ secrets.KEY_PASSWORD }}
+        KEY_ALIAS: ${{ secrets.KEY_ALIAS }}
       run: gradle :app:assembleRelease --no-daemon
 
     - name: Build Unsigned Release APK
